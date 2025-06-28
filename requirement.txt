@@ -1,4 +1,5 @@
 streamlit
 fpdf
-pillow
-pandas
+opencv-python-headless
+matplotlib
+Pillow
