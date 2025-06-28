@@ -1,7 +1,8 @@
 streamlit
-fpdf
+fpdf2
 opencv-python-headless
 matplotlib
 Pillow
+
 
 
