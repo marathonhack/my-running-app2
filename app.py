@@ -1,70 +1,61 @@
 import streamlit as st
-import os
 import pandas as pd
+import matplotlib.pyplot as plt
 from fpdf import FPDF
 from PIL import Image
+import os
 
-# ディレクトリ作成
-UPLOAD_DIR = "uploaded_videos"
-CSV_DIR = "uploaded_csvs"
-IMAGE_DIR = "uploaded_images"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(CSV_DIR, exist_ok=True)
-os.makedirs(IMAGE_DIR, exist_ok=True)
+st.set_page_config(page_title="Running Form Report", layout="centered")
 
-st.title("フォーム分析ライト版アプリ")
+st.title("🏃 Running Form PDF Report Generator")
 
-page = st.sidebar.selectbox("ページ選択", ["動画アップロード", "CSVアップロード＆診断", "画像表示＆PDF出力"])
+# --- CSVアップロード ---
+csv_file = st.file_uploader("📂 アップロードされた関節角度のCSVファイルを選んでください", type="csv")
+if csv_file is not None:
+    df = pd.read_csv(csv_file)
+    st.success("✅ CSVファイルを読み込みました！")
+    st.dataframe(df)
 
-if page == "動画アップロード":
-    st.header("① スマホで撮影した動画をアップロード")
-    uploaded_file = st.file_uploader("動画ファイル（mp4, mov）を選択", type=["mp4", "mov"])
-    if uploaded_file:
-        path = os.path.join(UPLOAD_DIR, uploaded_file.name)
-        with open(path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        st.success(f"アップロード完了: {uploaded_file.name}")
-        st.video(path)
+    # --- ChatGPT風のコメント ---
+    avg_angle = df["knee_angle"].mean()
+    if avg_angle < 160:
+        comment = "Your knee angle seems slightly tight — consider focusing on flexibility."
+    else:
+        comment = "Your knee extension is good. Keep it up!"
 
-elif page == "CSVアップロード＆診断":
-    st.header("② ローカルで処理した角度データをアップロード")
-    uploaded_csv = st.file_uploader("角度CSVファイルをアップロード", type=["csv"])
-    if uploaded_csv:
-        df = pd.read_csv(uploaded_csv)
-        st.dataframe(df)
+    st.write("🧠 診断コメント:")
+    st.info(comment)
 
-        st.subheader("ChatGPT風の診断コメント")
-        if "左膝角度" in df.columns:
-            avg_angle = df["左膝角度"].mean()
-            if avg_angle < 150:
-                st.info("膝の曲がりがやや浅い傾向があります。もう少し柔軟性を意識しましょう。")
-            elif avg_angle > 170:
-                st.info("膝が伸びすぎている可能性があります。着地時の衝撃に注意。")
-            else:
-                st.success("適切な膝角度を保てています！")
+    # --- グラフ生成 ---
+    fig, ax = plt.subplots()
+    ax.plot(df["frame"], df["knee_angle"], label="Knee Angle")
+    ax.set_xlabel("Frame")
+    ax.set_ylabel("Angle (deg)")
+    ax.set_title("Knee Angle over Time")
+    ax.legend()
+    graph_path = "knee_angle_plot.png"
+    plt.savefig(graph_path)
+    st.pyplot(fig)
 
-elif page == "画像表示＆PDF出力":
-    st.header("③ キーフレーム画像表示とレポート出力")
-    uploaded_images = st.file_uploader("フォーム画像をアップロード（複数可）", type=["jpg", "png"], accept_multiple_files=True)
-    if uploaded_images:
-        image_paths = []
-        for img_file in uploaded_images:
-            path = os.path.join(IMAGE_DIR, img_file.name)
-            with open(path, "wb") as f:
-                f.write(img_file.getbuffer())
-            image_paths.append(path)
-            st.image(path, caption=img_file.name, width=300)
+    # --- PDF生成 ---
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=14)
+    pdf.cell(200, 10, txt="Running Form Report", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.multi_cell(0, 10, txt=f"Average Knee Angle: {avg_angle:.2f} degrees\n\nComment:\n{comment}")
+    pdf.image(graph_path, x=10, y=60, w=180)
 
-        if st.button("PDFレポートを作成"):
-            pdf = FPDF()
-            pdf.set_auto_page_break(auto=True, margin=15)
-            pdf.add_page()
-            pdf.set_font("Arial", size=16)
-            pdf.cell(200, 10, txt="フォーム比較レポート", ln=1)
+    pdf_path = "report.pdf"
+    pdf.output(pdf_path)
+    st.success("📄 PDFレポートを生成しました")
 
-            for img_path in image_paths:
-                pdf.image(img_path, w=180)
-            pdf_path = "フォームレポート.pdf"
-            pdf.output(pdf_path)
-            with open(pdf_path, "rb") as f:
-                st.download_button("📄 レポートをダウンロード", f, file_name=pdf_path)
+    with open(pdf_path, "rb") as f:
+        st.download_button(label="⬇️ レポートをダウンロード", data=f, file_name="running_report.pdf", mime="application/pdf")
+
+# --- 画像アップロード（任意） ---
+st.subheader("📷 フォーム画像の表示（オプション）")
+img_file = st.file_uploader("フォーム画像ファイルを選択（PNGまたはJPEG）", type=["png", "jpg", "jpeg"])
+if img_file is not None:
+    image = Image.open(img_file)
+    st.image(image, caption="Uploaded Form Image", use_column_width=True)
