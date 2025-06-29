@@ -3,8 +3,7 @@ fpdf2
 matplotlib
 pillow
 pandas
-libfreetype6-dev
-libpng-dev
+
 
 
 
