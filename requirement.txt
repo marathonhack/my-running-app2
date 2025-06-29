@@ -3,7 +3,9 @@ fpdf2
 matplotlib
 pillow
 pandas
-# update
+libfreetype6-dev
+libpng-dev
+
 
 
 
