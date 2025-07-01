@@ -1,8 +1,8 @@
-streamlit==1.26.0
-fpdf2==2.7.8
-matplotlib==3.7.1
-pillow==9.5.0
-pandas==1.5.3
+streamlit
+fpdf2
+pillow
+pandas
+
 
 
 
